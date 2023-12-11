@@ -1,5 +1,7 @@
 const fs = require('fs');
 
+const jockerRule = true;
+
 const cardsPower = [
   '2',
   '3',
@@ -43,28 +45,40 @@ function getHandType(hand) {
       occurrences.set(char, 1);
     }
   }
-  const values = Array.from(occurrences.values());
-  let highest = values.sort((a, b) => b - a)[0];
 
-  if (highest > 3) {
-    return highest + 2;
+  let jockers = 0;
+
+  if (jockerRule) {
+    jockers = occurrences.get('J') || 0;
+    occurrences.delete('J');
   }
 
-  if (highest === 3) {
-    if (values.includes(2)) {
+  const values = Array.from(occurrences.values()).sort((a, b) => b - a);
+  values[0] = (values[0] || 0) + jockers;
+
+  if (values[0] === 5) {
+    return 7;
+  }
+
+  if (values[0] === 4) {
+    return 6;
+  }
+
+  if (values[0] === 3) {
+    if (values[1] === 2) {
       return 5;
     }
     return 4;
   }
 
-  if (
-    highest === 2 &&
-    values.reduce((occur, value) => (occur += value === 2 ? 1 : 0), 0) > 1
-  ) {
-    return 3;
+  if (values[0] === 2) {
+    if (values[1] === 2) {
+      return 3;
+    }
+    return 2;
   }
 
-  return highest;
+  return 1;
 }
 
 function readHands(data) {
@@ -75,7 +89,9 @@ function readHands(data) {
 }
 
 function cardPower(card) {
-  return cardsPower.findIndex((val) => val === card);
+  return (jockerRule ? cardsPowerJocker : cardsPower).findIndex(
+    (val) => val === card
+  );
 }
 
 function sortHands(hand1, hand2) {
@@ -107,8 +123,6 @@ function process(data) {
   const hands = readHands(data);
   console.log('--- Day 7: Camel Cards ---');
   console.log(part1(hands));
-
-  console.log('--- Part Two ---');
 }
 
 fs.readFile('day07/input.txt', 'utf8', (_, data) => {
